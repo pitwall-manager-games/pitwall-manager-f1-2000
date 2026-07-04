@@ -1,0 +1,44 @@
+{
+  "name": "pitwall-manager-f1-2000",
+  "version": "1.0.0",
+  "description": "Juego de estrategia y gestión en tiempo real ambientado en la temporada 2000 de Fórmula 1.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "servor src --reload",
+    "lint": "oxlint src/",
+    "format": "oxfmt src/",
+    "test": "node --test",
+    "test:watch": "node --test --watch",
+    "deploy": "gh-pages -d src/"
+  },
+  "keywords": [
+    "f1-manager",
+    "motorsport-simulation",
+    "race-strategy",
+    "pitwall-simulator",
+    "html5-canvas-game",
+    "vanilla-javascript",
+    "css-grid-layout",
+    "es6-modules",
+    "indie-game-development",
+    "web-based-game",
+    "browser-game",
+    "real-time-strategy"
+  ],
+  "author": "rreinav",
+  "license": "MIT",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.9.0",
+      "onFail": "download"
+    }
+  },
+  "type": "module",
+  "devDependencies": {
+    "gh-pages": "^6.3.0",
+    "oxfmt": "^0.57.0",
+    "oxlint": "^1.72.0",
+    "servor": "^4.0.2"
+  }
+}

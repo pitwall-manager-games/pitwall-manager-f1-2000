@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pitwall Manager</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <header id="top-bar">
+      <span id="clock">14:32</span>
+      <span id="weather">☀️ 24°C - Seco</span>
+      <span id="forecast">🌧 Previsión: lluvia en vta 25</span>
+    </header>
+
+    <main id="main-content">
+      <section id="timing-panel">
+        <h2>📋 TIMING</h2>
+        <div id="timing-content">
+          <div class="timing-header">
+            <span>Vuelta <span id="current-lap">1</span>/<span id="total-laps">60</span></span>
+          </div>
+          <div class="timing-row" id="driver1-timing">
+            <span class="pos" id="d1-pos">P3</span>
+            <span class="interval" id="d1-interval">+1.2s</span>
+            <span class="tyre" id="d1-tyre">⬛ S24(6)</span>
+          </div>
+          <div class="timing-row" id="driver2-timing">
+            <span class="pos" id="d2-pos">P5</span>
+            <span class="interval" id="d2-interval">+3.8s</span>
+            <span class="tyre" id="d2-tyre">⬜ H18(10)</span>
+          </div>
+          <div class="timing-footer">
+            <span>V. Rápida: <span id="fastest-lap">1:23.456</span> (<span id="fastest-driver">VER</span>)</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="track-panel">
+        <h2>🏁 CIRCUITO</h2>
+        <canvas id="track-canvas"></canvas>
+      </section>
+
+      <section id="right-panel">
+        <div id="orders-panel">
+          <h2>📡 ÓRDENES</h2>
+          <fieldset class="driver-orders" id="driver1-orders">
+            <legend>PILOTO 1</legend>
+            <div class="orders-section">
+              <h3>Órdenes</h3>
+              <label>Ritmo:
+                <select id="d1-pace">
+                  <option value="attack">Ataque</option>
+                  <option value="normal" selected>Normal</option>
+                  <option value="defend">Defender</option>
+                  <option value="conserve">Conservar</option>
+                </select>
+              </label>
+              <label>Motor:
+                <select id="d1-engine">
+                  <option value="high">Alto rendimiento</option>
+                  <option value="normal" selected>Normal</option>
+                  <option value="low">Ahorro</option>
+                </select>
+              </label>
+              <label>DRS/ERS:
+                <select id="d1-drs">
+                  <option value="push">Exprimir</option>
+                  <option value="normal" selected>Normal</option>
+                  <option value="save">Reservar</option>
+                </select>
+              </label>
+            </div>
+            <div class="boxes-section">
+              <h3>Boxes</h3>
+              <label>Neumático:
+                <select id="d1-tyre-select">
+                  <option value="soft">🟥 Blando</option>
+                  <option value="medium" selected>🟨 Medio</option>
+                  <option value="hard">⬜ Duro</option>
+                  <option value="inter">🟢 Intermedio</option>
+                  <option value="wet">🔵 Lluvia</option>
+                </select>
+              </label>
+              <label>Gasolina:
+                <input type="range" id="d1-fuel" min="0" max="100" value="65" step="1">
+                <span id="d1-fuel-value">65</span> kg
+              </label>
+              <div class="fuel-marks">
+                <span>22kg</span><span>30kg</span><span>100kg</span>
+              </div>
+              <label class="checkbox-label">
+                <input type="checkbox" id="d1-pit-request"> Solicitar parada
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="driver-orders" id="driver2-orders">
+            <legend>PILOTO 2</legend>
+            <div class="orders-section">
+              <h3>Órdenes</h3>
+              <label>Ritmo:
+                <select id="d2-pace">
+                  <option value="attack">Ataque</option>
+                  <option value="normal" selected>Normal</option>
+                  <option value="defend">Defender</option>
+                  <option value="conserve">Conservar</option>
+                </select>
+              </label>
+              <label>Motor:
+                <select id="d2-engine">
+                  <option value="high">Alto rendimiento</option>
+                  <option value="normal" selected>Normal</option>
+                  <option value="low">Ahorro</option>
+                </select>
+              </label>
+              <label>DRS/ERS:
+                <select id="d2-drs">
+                  <option value="push">Exprimir</option>
+                  <option value="normal" selected>Normal</option>
+                  <option value="save">Reservar</option>
+                </select>
+              </label>
+            </div>
+            <div class="boxes-section">
+              <h3>Boxes</h3>
+              <label>Neumático:
+                <select id="d2-tyre-select">
+                  <option value="soft">🟥 Blando</option>
+                  <option value="medium" selected>🟨 Medio</option>
+                  <option value="hard">⬜ Duro</option>
+                  <option value="inter">🟢 Intermedio</option>
+                  <option value="wet">🔵 Lluvia</option>
+                </select>
+              </label>
+              <label>Gasolina:
+                <input type="range" id="d2-fuel" min="0" max="100" value="65" step="1">
+                <span id="d2-fuel-value">65</span> kg
+              </label>
+              <div class="fuel-marks">
+                <span>22kg</span><span>30kg</span><span>100kg</span>
+              </div>
+              <label class="checkbox-label">
+                <input type="checkbox" id="d2-pit-request"> Solicitar parada
+              </label>
+            </div>
+          </fieldset>
+        </div>
+
+        <div id="status-panel">
+          <h2>🏎️ ESTADOS</h2>
+          <div class="driver-status" id="driver1-status">
+            <h3>PILOTO 1</h3>
+            <canvas id="car-canvas-d1" class="car-diagram" width="120" height="200"></canvas>
+            <div class="driver-bars">
+              <div class="bar">
+                <span>😰 Estrés:</span>
+                <div class="bar-track"><div class="bar-fill" id="d1-stress" style="width:50%"></div></div>
+                <span id="d1-stress-value">50%</span>
+              </div>
+              <div class="bar">
+                <span>😓 Cansancio:</span>
+                <div class="bar-track"><div class="bar-fill" id="d1-fatigue" style="width:20%"></div></div>
+                <span id="d1-fatigue-value">20%</span>
+              </div>
+            </div>
+          </div>
+          <div class="driver-status" id="driver2-status">
+            <h3>PILOTO 2</h3>
+            <canvas id="car-canvas-d2" class="car-diagram" width="120" height="200"></canvas>
+            <div class="driver-bars">
+              <div class="bar">
+                <span>😰 Estrés:</span>
+                <div class="bar-track"><div class="bar-fill" id="d2-stress" style="width:20%"></div></div>
+                <span id="d2-stress-value">20%</span>
+              </div>
+              <div class="bar">
+                <span>😓 Cansancio:</span>
+                <div class="bar-track"><div class="bar-fill" id="d2-fatigue" style="width:80%"></div></div>
+                <span id="d2-fatigue-value">80%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
