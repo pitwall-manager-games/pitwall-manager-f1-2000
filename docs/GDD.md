@@ -41,14 +41,10 @@ El usuario gestiona dos monoplazas independientes con las siguientes métricas:
   * `Normal`: Conducción de carrera estándar.
   * `Defender`: Defender la posición frente a ataques rivales.
   * `Conservar`: Bajar el ritmo para reducir el estrés del piloto.
-* **Modo Motor:**
+* **Mapeo Motor:**
   * `Alto rendimiento`: Máxima velocidad, máximo consumo de combustible.
   * `Normal`: Equilibrio entre velocidad y consumo.
   * `Ahorro`: Menor velocidad, menor consumo.
-* **DRS/ERS:**
-  * `Exprimir`: Gastar DRS en cada vuelta disponible.
-  * `Normal`: Uso equilibrado del DRS.
-  * `Reservar`: Mantener el DRS alto para momentos clave.
 * **Degradación de Neumáticos (Tyre Wear):** Comienza en 100%. Al caer por debajo del 30%, el monoplaza pierde adherencia y sus tiempos por vuelta empeoran severamente.
 * **Combustible:** Nivel de gasolina (0–100 kg). Mayor carga = más peso = vueltas más lentas. Menos combustible = coche más ligero. El consumo varía según el modo motor seleccionado.
 * **Estrés:** Aumenta cuando el piloto está atacando o defendiendo una posición. Disminuye cuando el ritmo de carrera es bajo (Conservar). Afecta al rendimiento del piloto.
@@ -145,21 +141,20 @@ repostaje = combustible_a_cargar / 9 kg/s
 ├──────────────┬────────────────────────┬─────────────────────┤
 │  📋 TIMING   │     🏁 CIRCUITO        │  📡 ÓRDENES         │
 │  Vuelta N    │   [Canvas 2D con       │  ┌─ PILOTO 1 ────┐ │
-│  ─────────   │    20 monoplazas       │  │ Ritmo [▼]     │ │
-│  PILOTO 1    │    animados]           │  │ Motor [▼]     │ │
-│  P3  +1.2s   │                        │  │ DRS/ERS [▼]   │ │
-│  ⬛ S24(6)   │                        │  │ ── BOXES ──   │ │
-│              │                        │  │ Neumático [▼] │ │
-│  PILOTO 2    │                        │  │ Gasolina [══] │ │
-│  P5  +3.8s   │                        │  │ ☐ Solicitar   │ │
-│  ⬜ H18(10)  │                        │  └───────────────┘ │
-│              │                        │  ┌─ PILOTO 2 ────┐ │
-│  ─────────   │                        │  │ ...            │ │
-│  V. Rápida   │                        │  └───────────────┘ │
-│  VER(P4)     │                        ├─────────────────────┤
-│  1:23.456    │                        │  🏎️ ESTADOS         │
-│              │                        │  ┌─ PILOTO 1 ────┐ │
-│              │                        │  │ [Diagrama      │ │
+│  ─────────   │    20 monoplazas       │  │ Ritmo [▼]      │ │
+│  PILOTO 1    │    animados]           │  │ Mapeo Motor [▼]│ │
+│  P3  +1.2s   │                        │  │ ── BOXES ──   │ │
+│  ⬛ S24(6)   │                        │  │ Neumático [▼] │ │
+│              │                        │  │ Gasolina [══] │ │
+│              │                        │  │ ☐ Solicitar   │ │
+│  PILOTO 2    │                        │  └───────────────┘ │
+│  P5  +3.8s   │                        │  ┌─ PILOTO 2 ────┐ │
+│  ⬜ H18(10)  │                        │  │ ...            │ │
+│              │                        │  └───────────────┘ │
+│  ─────────   │                        ├─────────────────────┤
+│  V. Rápida   │                        │  🏎️ ESTADOS         │
+│  VER(P4)     │                        │  ┌─ PILOTO 1 ────┐ │
+│  1:23.456    │                        │  │ [Diagrama      │ │
 │              │                        │  │  coche vista   │ │
 │              │                        │  │  superior]     │ │
 │              │                        │  │ 😰 ████░░ 40%  │ │
@@ -172,7 +167,7 @@ repostaje = combustible_a_cargar / 9 kg/s
 ```
 
 ### 7.3. Panel de Órdenes (por piloto)
-* **Fieldset "Órdenes":** Dropdowns de Ritmo, Motor y DRS/ERS.
+* **Fieldset "Órdenes":** Dropdowns de Ritmo y Mapeo Motor.
 * **Fieldset "Boxes":** Dropdown de neumático, range de gasolina (0–100 kg con marcas 22/30/100) y checkbox "Solicitar parada".
 
 ### 7.4. Panel de Estados (por piloto)
