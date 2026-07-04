@@ -225,7 +225,7 @@ function getCurrentWeather() {
   return state.weather;
 }
 
-function getProgressGain(driver, _weather) {
+function getProgressGain(driver, weather) {
   const baseSpeed = {
     attack: 1.2,
     normal: 1.0,
@@ -247,8 +247,22 @@ function getProgressGain(driver, _weather) {
 
   const pace = baseSpeed[driver.pace] || 1.0;
   const engine = engineBoost[driver.engine] || 1.0;
+  const tyreSpeed = TYRE_CONFIG[driver.selectedTyre]?.speed || 1.0;
 
-  return 0.5 * pace * engine * tyreFactor * fuelFactor * stressFactor * fatigueFactor;
+  let weatherFactor = 1.0
+  if (weather === 'rain') {
+    if (driver.selectedTyre === 'wet' || driver.selectedTyre === 'inter') {
+      weatherFactor = 0.92
+    } else {
+      weatherFactor = 0.55
+    }
+  } else {
+    if (driver.selectedTyre === 'wet' || driver.selectedTyre === 'inter') {
+      weatherFactor = 0.85
+    }
+  }
+
+  return 0.5 * pace * engine * tyreSpeed * tyreFactor * fuelFactor * stressFactor * fatigueFactor * weatherFactor;
 }
 
 function completeLap(driver, weather) {
@@ -356,11 +370,11 @@ function drawCarDiagram(canvas, driver) {
     return '#ff3344';
   };
 
-  const bodyWear = Math.random() * 40;
-  const frontWingWear = Math.random() * 40;
-  const rearWingWear = Math.random() * 40;
-  const noseWear = Math.random() * 40;
-  const engineWear = Math.random() * 40;
+  const bodyWear = (driver.tyreWear + driver.lapsOnTyre * 2) / 2
+  const frontWingWear = driver.tyreWear * 0.8
+  const rearWingWear = driver.tyreWear * 0.8
+  const noseWear = driver.stress * 1.2
+  const engineWear = driver.engine === 'high' ? 60 : driver.engine === 'low' ? 10 : 30
 
   ctx.save();
 
