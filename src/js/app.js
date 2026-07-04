@@ -3,7 +3,22 @@ import { calcTyreWear, calcFuelConsumption, calcPitStopTime, TYRE_CONFIG, FUEL_C
 
 const TOTAL_LAPS = 60;
 
-const AI_NAMES = ['Frentzen', 'Villeneuve', 'Barrichello', 'Irvine', 'Fisichella']
+const TEAMS = [
+  { short: 'roj', color: 'rojo', personalityIndex: 0 },
+  { short: 'ama', color: 'amarillo', personalityIndex: 1 },
+  { short: 'ver', color: 'verde', personalityIndex: 2 },
+  { short: 'azu', color: 'azul', personalityIndex: 3 },
+  { short: 'nar', color: 'naranja', personalityIndex: 4 },
+]
+
+const TEAM_COLORS = {
+  rojo: '#ff4444',
+  amarillo: '#ffdd00',
+  verde: '#00ee66',
+  azul: '#4499ff',
+  naranja: '#ff8800',
+}
+
 const AI_PERSONALITIES = [
   { paceBias: 'attack', engineBias: 'high', pitThreshold: 25, aggro: 1.15 },
   { paceBias: 'normal', engineBias: 'high', pitThreshold: 20, aggro: 1.05 },
@@ -13,25 +28,32 @@ const AI_PERSONALITIES = [
 ]
 
 function createAIDrivers() {
-  return AI_NAMES.map((name, i) => ({
-    id: 10 + i,
-    name,
-    pace: 'normal',
-    engine: 'normal',
-    tyreWear: 0,
-    fuel: 65,
-    targetFuel: 65,
-    stress: 10 + Math.random() * 20,
-    fatigue: 5 + Math.random() * 10,
-    pitRequested: false,
-    selectedTyre: 'medium',
-    lapsOnTyre: 0,
-    lapsCompleted: 0,
-    progress: 0,
-    isPlayer: false,
-    personality: AI_PERSONALITIES[i],
-    decisionTimer: 0,
-  }))
+  const drivers = []
+  TEAMS.forEach((team, ti) => {
+    for (let n = 1; n <= 2; n++) {
+      drivers.push({
+        id: 10 + ti * 2 + (n - 1),
+        name: `${team.short}-${n}`,
+        team: team.color,
+        pace: 'normal',
+        engine: 'normal',
+        tyreWear: 0,
+        fuel: 65,
+        targetFuel: 65,
+        stress: 10 + Math.random() * 20,
+        fatigue: 5 + Math.random() * 10,
+        pitRequested: false,
+        selectedTyre: 'medium',
+        lapsOnTyre: 0,
+        lapsCompleted: 0,
+        progress: 0,
+        isPlayer: false,
+        personality: AI_PERSONALITIES[team.personalityIndex],
+        decisionTimer: 0,
+      })
+    }
+  })
+  return drivers
 }
 
 const state = {
@@ -196,10 +218,11 @@ function endRace() {
   tbody.innerHTML = ''
 
   sorted.forEach((d, i) => {
+    const color = d.isPlayer ? '#00aaff' : (TEAM_COLORS[d.team] || '#ff6644')
     const tr = document.createElement('tr')
     tr.innerHTML = `
       <td>P${i + 1}</td>
-      <td>${d.name}</td>
+      <td><span class="team-dot" style="background:${color}"></span> ${d.name}</td>
       <td>${d.lapsCompleted}</td>
       <td>${TYRE_CONFIG[d.selectedTyre]?.label || '-'}</td>
       <td>-</td>
@@ -325,11 +348,12 @@ function renderTiming() {
     const tyreLabel = TYRE_CONFIG[d.selectedTyre]?.label || '-'
     const pos = i + 1
 
+    const color = d.isPlayer ? '#00aaff' : (TEAM_COLORS[d.team] || '#ff6644')
     const row = document.createElement('div')
     row.className = 'timing-row'
     row.innerHTML = `
       <span class="pos">P${pos}</span>
-      <span class="driver-name">${d.name}</span>
+      <span class="driver-name"><span class="team-dot" style="background:${color}"></span> ${d.name}</span>
       <span class="tyre">${tyreSymbol} ${tyreLabel}${Math.round(d.lapsOnTyre)}</span>
     `
     container.appendChild(row)

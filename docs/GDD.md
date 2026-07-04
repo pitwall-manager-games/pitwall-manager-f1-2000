@@ -78,7 +78,7 @@ repostaje = combustible_a_cargar / 9 kg/s
 ```
 
 ### 4.4. Inteligencia Artificial y Eventos
-* **Rivales de la IA:** Hasta 18 pilotos compiten autónomamente. La IA gestiona las mismas variables que el jugador (ritmo, modo motor, combustible, neumáticos, paradas en boxes). Existen varias personalidades de IA con comportamientos distintos (agresiva, conservadora, equilibrada, etc.). La IA responde al ritmo global de la carrera, no directamente a las acciones del jugador.
+* **Rivales de la IA:** 10 pilotos de IA (5 equipos de 2 pilotos) compiten autónomamente. Cada equipo tiene un color distintivo (rojo, amarillo, verde, azul, naranja) y sus pilotos se identifican como `{color}-1` y `{color}-2`. La IA gestiona las mismas variables que el jugador (ritmo, mapeo motor, combustible, neumáticos, paradas en boxes). Existen varias personalidades de IA con comportamientos distintos (agresiva, conservadora, equilibrada, etc.). La IA responde al ritmo global de la carrera, no directamente a las acciones del jugador.
 * **Incidentes Aleatorios:** Posibilidad de banderas amarillas o despliegue del *Safety Car*, lo que ralentiza el ritmo global y abre ventanas estratégicas para detenerse en boxes.
 
 ### 4.5. Clima Dinámico
@@ -153,7 +153,7 @@ repostaje = combustible_a_cargar / 9 kg/s
 │              │                        │  └───────────────┘ │
 │  ─────────   │                        ├─────────────────────┤
 │  V. Rápida   │                        │  🏎️ ESTADOS         │
-│  VER(P4)     │                        │  ┌─ PILOTO 1 ────┐ │
+│  ROJ(P4)     │                        │  ┌─ PILOTO 1 ────┐ │
 │  1:23.456    │                        │  │ [Diagrama      │ │
 │              │                        │  │  coche vista   │ │
 │              │                        │  │  superior]     │ │

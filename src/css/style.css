@@ -236,6 +236,17 @@ html, body {
 .timing-row .driver-name {
   flex: 1;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.team-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .timing-row .tyre {
