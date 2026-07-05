@@ -19,7 +19,7 @@
 - **Canvas rendering** in `src/js/track.js` (Track class, 2D circuit drawing).
 - **Physics/formulas** in `src/js/physics.js` (tyre degradation, fuel consumption, pit stop timing).
 - **CSS** in `src/css/style.css` — CSS Grid layout, dark theme, monospace font stack.
-- **Game Design Document:** `docs/GDD.md` — read before implementing gameplay features.
+- **Game Design Document:** `docs/gdd/index.md` — read before implementing gameplay features.
 
 ## Architecture Notes
 
