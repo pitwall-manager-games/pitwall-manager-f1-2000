@@ -1,15 +1,14 @@
 import { Track } from './track.js';
-import { calcTyreWear, calcFuelConsumption, calcPitStopTime, TYRE_CONFIG, FUEL_CAPACITY } from './physics.js';
+import {
+  calcTyreWear, calcFuelConsumption, calcPitStopTime,
+  TYRE_CONFIG, FUEL_CAPACITY, BUDGET,
+  DRIVER_LEVELS, ENGINE_TIERS, CHASSIS_TIERS,
+  generateDriverAttributes,
+  AI_PERSONALITY_CONFIG, pickWeighted,
+  computeFactorySetup, SETUP_SCORE,
+} from './physics.js';
 
 const TOTAL_LAPS = 60;
-
-const TEAMS = [
-  { short: 'roj', color: 'rojo', personalityIndex: 0 },
-  { short: 'ama', color: 'amarillo', personalityIndex: 1 },
-  { short: 'ver', color: 'verde', personalityIndex: 2 },
-  { short: 'azu', color: 'azul', personalityIndex: 3 },
-  { short: 'nar', color: 'naranja', personalityIndex: 4 },
-]
 
 const TEAM_COLORS = {
   rojo: '#ff4444',
@@ -19,20 +18,29 @@ const TEAM_COLORS = {
   naranja: '#ff8800',
 }
 
-const AI_PERSONALITIES = [
-  { paceBias: 'attack', engineBias: 'high', pitThreshold: 25, aggro: 1.15 },
-  { paceBias: 'normal', engineBias: 'high', pitThreshold: 20, aggro: 1.05 },
-  { paceBias: 'normal', engineBias: 'normal', pitThreshold: 18, aggro: 1.0 },
-  { paceBias: 'defend', engineBias: 'normal', pitThreshold: 15, aggro: 0.95 },
-  { paceBias: 'conserve', engineBias: 'low', pitThreshold: 12, aggro: 0.90 },
+const AI_TEAMS = [
+  { short: 'roj', color: 'rojo', personalityKey: 'agresiva' },
+  { short: 'ama', color: 'amarillo', personalityKey: 'equilibrada' },
+  { short: 'ver', color: 'verde', personalityKey: 'conservadora' },
+  { short: 'azu', color: 'azul', personalityKey: 'agresiva' },
+  { short: 'nar', color: 'naranja', personalityKey: 'equilibrada' },
 ]
 
 function createAIDrivers() {
   const drivers = []
-  TEAMS.forEach((team, ti) => {
+  AI_TEAMS.forEach((team) => {
+    const persCfg = AI_PERSONALITY_CONFIG[team.personalityKey]
+
+    const engineTier = pickWeighted(persCfg.engineTierBias)
+    const chassisTier = pickWeighted(persCfg.chassisTierBias)
+    const d1Level = pickWeighted(persCfg.driverLevelBias)
+    const d2Level = pickWeighted(persCfg.driverLevelBias)
+
     for (let n = 1; n <= 2; n++) {
+      const level = n === 1 ? d1Level : d2Level
+      const attrs = generateDriverAttributes(level)
       drivers.push({
-        id: 10 + ti * 2 + (n - 1),
+        id: 1000 + drivers.length,
         name: `${team.short}-${n}`,
         team: team.color,
         pace: 'normal',
@@ -48,7 +56,20 @@ function createAIDrivers() {
         lapsCompleted: 0,
         progress: 0,
         isPlayer: false,
-        personality: AI_PERSONALITIES[team.personalityIndex],
+        level,
+        attributes: attrs,
+        personality: {
+          agresividad: persCfg.agresividad[0] + Math.floor(Math.random() * (persCfg.agresividad[1] - persCfg.agresividad[0] + 1)),
+          lealtad: persCfg.lealtad[0] + Math.floor(Math.random() * (persCfg.lealtad[1] - persCfg.lealtad[0] + 1)),
+          confianza: 50,
+        },
+        car: {
+          engineTier,
+          engineSlider: 0,
+          chassisTier,
+          chassisSlider: 0,
+          reliability: { motor: 100, caja: 100, suspension: 100, aero: 100 },
+        },
         decisionTimer: 0,
       })
     }
@@ -56,47 +77,294 @@ function createAIDrivers() {
   return drivers
 }
 
+function createPlayerDrivers() {
+  return [
+    { id: 1, name: 'JUG-1', team: 'jug', pace: 'normal', engine: 'normal', tyreWear: 0, fuel: 65, targetFuel: 65, stress: 20, fatigue: 10, pitRequested: false, selectedTyre: 'medium', lapsOnTyre: 0, lapsCompleted: 0, progress: 0, isPlayer: true, level: 3, attributes: generateDriverAttributes(3), personality: { agresividad: 5, lealtad: 5, confianza: 50 }, car: null },
+    { id: 2, name: 'JUG-2', team: 'jug', pace: 'normal', engine: 'normal', tyreWear: 0, fuel: 65, targetFuel: 65, stress: 10, fatigue: 5, pitRequested: false, selectedTyre: 'medium', lapsOnTyre: 0, lapsCompleted: 0, progress: 0, isPlayer: true, level: 3, attributes: generateDriverAttributes(3), personality: { agresividad: 5, lealtad: 5, confianza: 50 }, car: null },
+  ]
+}
+
 const state = {
   mode: 'classic',
   currentLap: 1,
   weather: 'dry',
   forecast: { changeLap: 25, nextWeather: 'rain' },
-  drivers: [
-    { id: 1, name: 'Piloto 1', pace: 'normal', engine: 'normal', tyreWear: 0, fuel: 65, targetFuel: 65, stress: 20, fatigue: 10, pitRequested: false, selectedTyre: 'medium', lapsOnTyre: 0, lapsCompleted: 0, progress: 0, isPlayer: true },
-    { id: 2, name: 'Piloto 2', pace: 'normal', engine: 'normal', tyreWear: 0, fuel: 65, targetFuel: 65, stress: 10, fatigue: 5, pitRequested: false, selectedTyre: 'medium', lapsOnTyre: 0, lapsCompleted: 0, progress: 0, isPlayer: true },
-  ],
-};
+  phase: 'economica',
+  budget: BUDGET,
+  car: {
+    engineTier: 2,
+    engineSlider: 0,
+    chassisTier: 2,
+    chassisSlider: 0,
+  },
+  selectedCircuit: null,
+  factorySetup: null,
+  drivers: createPlayerDrivers(),
+  testTandas: { 1: [], 2: [] },
+  testTandasUsed: { 1: 0, 2: 0 },
+}
 
 let track;
 let raceActive = false;
 
+function calcEcoTotal() {
+  const engineTier = Number(document.getElementById('eco-engine-tier').value)
+  const chassisTier = Number(document.getElementById('eco-chassis-tier').value)
+  const d1Level = Number(document.getElementById('eco-driver1-level').value)
+  const d2Level = Number(document.getElementById('eco-driver2-level').value)
+
+  const cost = (ENGINE_TIERS[engineTier]?.cost || 0) + (CHASSIS_TIERS[chassisTier]?.cost || 0) + (DRIVER_LEVELS[d1Level]?.cost || 0) + (DRIVER_LEVELS[d2Level]?.cost || 0)
+  const remaining = BUDGET - cost
+
+  document.getElementById('eco-total').textContent = `${cost.toLocaleString()} €`
+  document.getElementById('eco-remaining').textContent = `${remaining.toLocaleString()} €`
+  document.getElementById('eco-continue-btn').disabled = remaining < 0
+  return remaining >= 0
+}
+
+function syncEcoState() {
+  state.car.engineTier = Number(document.getElementById('eco-engine-tier').value)
+  state.car.engineSlider = Number(document.getElementById('eco-engine-slider').value)
+  state.car.chassisTier = Number(document.getElementById('eco-chassis-tier').value)
+  state.car.chassisSlider = Number(document.getElementById('eco-chassis-slider').value)
+  state.drivers[0].level = Number(document.getElementById('eco-driver1-level').value)
+  state.drivers[1].level = Number(document.getElementById('eco-driver2-level').value)
+
+  state.drivers[0].attributes = generateDriverAttributes(state.drivers[0].level)
+  state.drivers[1].attributes = generateDriverAttributes(state.drivers[1].level)
+}
+
 function init() {
-  document.getElementById('start-fuel').addEventListener('input', (e) => {
-    document.getElementById('start-fuel-value').textContent = e.target.value
+  document.getElementById('start-setup-btn').addEventListener('click', () => {
+    document.getElementById('title-screen').style.display = 'none'
+    document.getElementById('economica-screen').style.display = 'flex'
+    calcEcoTotal()
   })
 
-  document.getElementById('start-race-btn').addEventListener('click', () => {
-    const startTyre = document.getElementById('start-tyre').value
-    const startFuel = Number(document.getElementById('start-fuel').value)
+  const ecoInputs = ['eco-engine-tier', 'eco-engine-slider', 'eco-chassis-tier', 'eco-chassis-slider', 'eco-driver1-level', 'eco-driver2-level']
+  ecoInputs.forEach(id => {
+    document.getElementById(id).addEventListener('change', calcEcoTotal)
+    document.getElementById(id).addEventListener('input', () => {
+      const el = document.getElementById(id)
+      if (el.type === 'range') {
+        const val = Number(el.value)
+        const label = val === 0 ? '±0' : val > 0 ? `+${val}` : `${val}`
+        document.getElementById(`${id}-value`).textContent = label
+      }
+      calcEcoTotal()
+    })
+  })
 
-    state.drivers = [
-      { ...state.drivers[0], selectedTyre: startTyre, fuel: startFuel, targetFuel: startFuel },
-      { ...state.drivers[1], selectedTyre: startTyre, fuel: startFuel, targetFuel: startFuel },
+  document.getElementById('eco-continue-btn').addEventListener('click', () => {
+    if (!calcEcoTotal()) return
+
+    syncEcoState()
+
+    state.drivers[0].attributes = generateDriverAttributes(state.drivers[0].level)
+    state.drivers[1].attributes = generateDriverAttributes(state.drivers[1].level)
+    state.testTandas = { 1: [], 2: [] }
+    state.testTandasUsed = { 1: 0, 2: 0 }
+
+    document.getElementById('economica-screen').style.display = 'none'
+    document.getElementById('preparatoria-screen').style.display = 'flex'
+
+    showPrepDriverInfo()
+
+    document.getElementById('prep-start-race-btn').disabled = true
+  })
+
+  document.getElementById('prep-circuit').addEventListener('change', (e) => {
+    const circuitId = e.target.value
+    if (!circuitId) {
+      state.selectedCircuit = null
+      state.factorySetup = null
+      document.getElementById('prep-d1-factory').textContent = '—'
+      document.getElementById('prep-d2-factory').textContent = '—'
+      document.getElementById('test-d1-btn').disabled = true
+      document.getElementById('test-d2-btn').disabled = true
+      document.getElementById('prep-start-race-btn').disabled = true
+      return
+    }
+
+    state.selectedCircuit = circuitId
+    state.factorySetup = computeFactorySetup(circuitId)
+
+    const f = state.factorySetup
+    const txt = `${f.alar} · ${f.ratio} · ${f.altura}`
+    document.getElementById('prep-d1-factory').textContent = txt
+    document.getElementById('prep-d2-factory').textContent = txt
+
+    for (let d = 1; d <= 2; d++) {
+      document.getElementById(`prep-d${d}-alar`).value = f.alar
+      document.getElementById(`prep-d${d}-ratio`).value = f.ratio
+      document.getElementById(`prep-d${d}-altura`).value = f.altura
+      state.testTandas[d] = []
+      state.testTandasUsed[d] = 0
+      renderTestResults(d)
+    }
+    updateTestButtons()
+
+    document.getElementById('test-d1-btn').disabled = false
+    document.getElementById('test-d2-btn').disabled = false
+    document.getElementById('prep-start-race-btn').disabled = false
+  })
+
+  function runTestTanda(driverIdx) {
+    const driver = state.drivers[driverIdx]
+    const di = driverIdx + 1
+    const tandas = state.testTandas[di]
+    const used = state.testTandasUsed[di]
+    const circuitId = state.selectedCircuit
+
+    if (!circuitId || used >= 5) return
+
+    const alar = document.getElementById(`prep-d${di}-alar`).value
+    const ratio = document.getElementById(`prep-d${di}-ratio`).value
+    const altura = document.getElementById(`prep-d${di}-altura`).value
+    const setup = { alar, ratio, altura }
+
+    const laps = []
+    for (let i = 0; i < 5; i++) {
+      laps.push(simulateTestLap(setup, driver, circuitId))
+    }
+
+    const avg = laps.reduce((a, b) => a + b, 0) / laps.length
+    const best = Math.min(...laps)
+    const tanda = { laps, avg, best, n: used + 1, setup: { ...setup } }
+    tandas.push(tanda)
+    state.testTandas[di] = tandas
+    state.testTandasUsed[di] = used + 1
+
+    renderTestResults(di)
+    updateTestButtons()
+  }
+
+  function simulateTestLap(setup, driver, circuitId) {
+    const baseScore = SETUP_SCORE[circuitId]
+    let lapTime = 90
+
+    for (const p of ['alar', 'ratio', 'altura']) {
+      lapTime *= baseScore[setup[p]][p]
+    }
+
+    const hab = driver.attributes.habilidad / 100
+    const exp = driver.attributes.experiencia / 100
+    const ref = driver.attributes.reflejos / 100
+    const cons = driver.attributes.consistencia / 100
+
+    const driverFactor = 0.6 + (hab * 0.15 + exp * 0.1 + ref * 0.1 + cons * 0.05) * 0.4
+    lapTime /= driverFactor
+
+    const carFactor = 1 - (state.car.engineTier * 0.02 + state.car.chassisTier * 0.015)
+    lapTime *= carFactor
+
+    const noise = 1 + (Math.random() - 0.5) * 0.01
+    lapTime *= noise
+
+    return Math.round(lapTime * 100) / 100
+  }
+
+  function renderTestResults(driverIdx) {
+    const container = document.getElementById(`test-d${driverIdx}-results`)
+    const tandas = state.testTandas[driverIdx]
+    if (tandas.length === 0) {
+      container.innerHTML = '<p class="test-pending">Selecciona un circuito y pulsa "INICIAR TANDA".</p>'
+      return
+    }
+
+    container.innerHTML = tandas.map(t => {
+      const lapsStr = t.laps.map(l => `${l.toFixed(2)}s`).join(' · ')
+      const precision = state.drivers[driverIdx - 1].level >= 4 ? '100%' : '±0.3s'
+      return `<div class="test-tanda">
+        <strong>Tanda ${t.n}:</strong> ${lapsStr}
+        <br>∅ <span class="tanda-avg">${t.avg.toFixed(2)}s</span>
+        · ★ <span class="tanda-best">${t.best.toFixed(2)}s</span>
+        <span class="tanda-precision"> [precisión: ${precision}]</span>
+      </div>`
+    }).join('')
+
+    container.scrollTop = container.scrollHeight
+  }
+
+  function updateTestButtons() {
+    for (let i = 0; i < 2; i++) {
+      const di = i + 1
+      const used = state.testTandasUsed[di]
+      const btn = document.getElementById(`test-d${di}-btn`)
+      const countSpan = document.querySelector(`#test-d${di} .tandas-count`)
+      btn.disabled = used >= 5 || !state.selectedCircuit
+      btn.textContent = used >= 5 ? 'TANDAS AGOTADAS' : `INICIAR TANDA (5 vtas) [${5 - used} rest]`
+      countSpan.textContent = `Tandas: ${used}/5`
+    }
+  }
+
+  document.getElementById('test-d1-btn').addEventListener('click', () => runTestTanda(0))
+  document.getElementById('test-d2-btn').addEventListener('click', () => runTestTanda(1))
+
+  const prepSetupIds = ['prep-d1-alar', 'prep-d1-ratio', 'prep-d1-altura', 'prep-d2-alar', 'prep-d2-ratio', 'prep-d2-altura']
+  prepSetupIds.forEach(id => {
+    document.getElementById(id).addEventListener('change', () => {
+      const di = id[5]
+      const used = state.testTandasUsed[di]
+      if (used > 0) {
+        const btn = document.getElementById(`test-d${di}-btn`)
+        btn.disabled = false
+        btn.textContent = `INICIAR TANDA (5 vtas) [${5 - used} rest]`
+      }
+    })
+  })
+
+  document.getElementById('prep-start-fuel').addEventListener('input', (e) => {
+    document.getElementById('prep-start-fuel-value').textContent = e.target.value
+  })
+
+  document.getElementById('prep-start-race-btn').addEventListener('click', () => {
+    document.getElementById('preparatoria-screen').style.display = 'none'
+    document.getElementById('race-screen').style.display = 'flex'
+
+    const startTyre = document.getElementById('prep-start-tyre').value
+    const startFuel = Number(document.getElementById('prep-start-fuel').value)
+
+    state.drivers[0].selectedTyre = startTyre
+    state.drivers[0].fuel = startFuel
+    state.drivers[0].targetFuel = startFuel
+    state.drivers[1].selectedTyre = startTyre
+    state.drivers[1].fuel = startFuel
+    state.drivers[1].targetFuel = startFuel
+
+    const allDrivers = [
+      ...state.drivers.slice(0, 2),
       ...createAIDrivers(),
     ]
 
-    document.getElementById('title-screen').style.display = 'none'
-    document.getElementById('race-screen').style.display = 'flex'
+    allDrivers.forEach(d => {
+      if (!d.progress) d.progress = 0
+      if (!d.lapsCompleted) d.lapsCompleted = 0
+      if (!d.lapsOnTyre) d.lapsOnTyre = 0
+      if (!d.tyreWear) d.tyreWear = 0
+      if (!d.stress) d.stress = 15 + Math.random() * 15
+      if (!d.fatigue) d.fatigue = 5 + Math.random() * 10
+    })
 
-    const canvas = document.getElementById('track-canvas');
-    track = new Track(canvas);
+    state.drivers = allDrivers
 
-    bindUI();
-    renderCarDiagrams();
-    renderStatus();
+    const canvas = document.getElementById('track-canvas')
+    track = new Track(canvas)
+
+    bindUI()
+    renderCarDiagrams()
+    renderStatus()
     raceActive = true
-    startGameLoop();
+    startGameLoop()
   })
+}
+
+function showPrepDriverInfo() {
+  for (let i = 0; i < 2; i++) {
+    const di = i + 1
+    const d = state.drivers[i]
+    document.querySelector(`#setup-d${di} .setup-level`).textContent = `(N${d.level})`
+  }
 }
 
 function bindUI() {
@@ -233,12 +501,18 @@ function endRace() {
 
 document.getElementById('back-to-menu-btn').addEventListener('click', () => {
   document.getElementById('results-screen').style.display = 'none'
+  document.getElementById('race-screen').style.display = 'none'
+  document.getElementById('preparatoria-screen').style.display = 'none'
   document.getElementById('title-screen').style.display = 'flex'
   state.currentLap = 1
-  state.drivers = [
-    { id: 1, name: 'Piloto 1', pace: 'normal', engine: 'normal', tyreWear: 0, fuel: 65, targetFuel: 65, stress: 20, fatigue: 10, pitRequested: false, selectedTyre: 'medium', lapsOnTyre: 0, lapsCompleted: 0, progress: 0, isPlayer: true },
-    { id: 2, name: 'Piloto 2', pace: 'normal', engine: 'normal', tyreWear: 0, fuel: 65, targetFuel: 65, stress: 10, fatigue: 5, pitRequested: false, selectedTyre: 'medium', lapsOnTyre: 0, lapsCompleted: 0, progress: 0, isPlayer: true },
-  ]
+  state.phase = 'economica'
+  state.budget = BUDGET
+  state.car = { engineTier: 2, engineSlider: 0, chassisTier: 2, chassisSlider: 0 }
+  state.selectedCircuit = null
+  state.factorySetup = null
+  state.testTandas = { 1: [], 2: [] }
+  state.testTandasUsed = { 1: 0, 2: 0 }
+  state.drivers = createPlayerDrivers()
 })
 
 function getCurrentWeather() {

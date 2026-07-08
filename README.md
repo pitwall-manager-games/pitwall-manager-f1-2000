@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Estrategia y gestión en tiempo real ambientado en la temporada 2000 de Fórmula 1. Gestiona neumáticos, combustible, mapeo motor y comunicaciones por radio con delay dinámico según el cansancio del piloto.
+Estrategia y gestión en tiempo real ambientado en la temporada 2000 de Fórmula 1. Gestiona el presupuesto de tu equipo, contrata pilotos, configura el coche por secciones modulares tipo slot car, y dirige la carrera desde el muro de boxes con neumáticos, combustible, mapeo motor y comunicaciones por radio con delay dinámico.
 
 [→ Hub de la saga](https://github.com/rreinav/pitwall-manager)
 

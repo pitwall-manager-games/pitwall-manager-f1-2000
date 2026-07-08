@@ -11,32 +11,215 @@
     <div id="title-screen">
       <h1>🏁 PITWALL MANAGER</h1>
       <p class="subtitle">F1 2000</p>
+      <button id="start-setup-btn">COMENZAR</button>
+    </div>
 
-      <div class="title-info">
-        <p>☀️ Clima actual: 24°C - Seco</p>
-        <p>🌧 Pronóstico: Lluvia en vta 25</p>
+    <div id="economica-screen">
+      <h1>💰 ECONÓMICA</h1>
+      <div class="economica-content">
+        <div class="budget-display">
+          <span>PRESUPUESTO:</span>
+          <span id="budget-value">5.000.000 €</span>
+        </div>
+
+        <div class="economica-section">
+          <h2>🏎️ COCHE</h2>
+
+          <div class="partida-row">
+            <h3>Motor + Caja cambios</h3>
+            <label>Nivel:
+              <select id="eco-engine-tier">
+                <option value="1">Económico — 800.000 €</option>
+                <option value="2" selected>Intermedio — 950.000 €</option>
+                <option value="3">Premium — 1.100.000 €</option>
+              </select>
+            </label>
+            <label>Balance:
+              <input type="range" id="eco-engine-slider" min="-2" max="2" value="0" step="1">
+              <span id="eco-engine-slider-value">±0</span>
+            </label>
+          </div>
+
+          <div class="partida-row">
+            <h3>Chasis + Aerodinámica</h3>
+            <label>Nivel:
+              <select id="eco-chassis-tier">
+                <option value="1">Básico — 500.000 €</option>
+                <option value="2" selected>Intermedio — 625.000 €</option>
+                <option value="3">Premium — 750.000 €</option>
+              </select>
+            </label>
+            <label>Balance:
+              <input type="range" id="eco-chassis-slider" min="-2" max="2" value="0" step="1">
+              <span id="eco-chassis-slider-value">±0</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="economica-section">
+          <h2>🧑‍✈️ PILOTOS</h2>
+
+          <div class="piloto-select">
+            <h3>JUG-1</h3>
+            <label>Nivel:
+              <select id="eco-driver1-level">
+                <option value="1">Novato — 500.000 €</option>
+                <option value="2">Aceptable — 1.000.000 €</option>
+                <option value="3" selected>Competitivo — 1.500.000 €</option>
+                <option value="4">Muy bueno — 2.000.000 €</option>
+                <option value="5">Estrella — 2.500.000 €</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="piloto-select">
+            <h3>JUG-2</h3>
+            <label>Nivel:
+              <select id="eco-driver2-level">
+                <option value="1">Novato — 500.000 €</option>
+                <option value="2">Aceptable — 1.000.000 €</option>
+                <option value="3" selected>Competitivo — 1.500.000 €</option>
+                <option value="4">Muy bueno — 2.000.000 €</option>
+                <option value="5">Estrella — 2.500.000 €</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="economica-total">
+          <span>GASTO TOTAL:</span>
+          <span id="eco-total">4.350.000 €</span>
+          <span>CRÉDITO RESTANTE:</span>
+          <span id="eco-remaining">650.000 €</span>
+        </div>
+
+        <button id="eco-continue-btn">CONTINUAR A PREPARACIÓN</button>
       </div>
+    </div>
 
-      <div class="title-config">
-        <label>Neumático inicio:
-          <select id="start-tyre">
-            <option value="soft">🟥 Blando</option>
-            <option value="medium" selected>🟨 Medio</option>
-            <option value="hard">⬜ Duro</option>
+    <div id="preparatoria-screen">
+      <h1>🔧 PREPARACIÓN</h1>
+      <div class="preparatoria-content">
+        <div class="preparatoria-section">
+          <h2>CIRCUITO</h2>
+          <select id="prep-circuit">
+            <option value="">— Seleccionar circuito —</option>
+            <option value="alpe">Alpe d'Azur — Mixto</option>
+            <option value="bosque">Bosque de la Plata — Lento</option>
+            <option value="puerto">Puerto Coronado — Velocidad</option>
+            <option value="lago">Lago Esmeralda — Técnico</option>
+            <option value="valle">Valle del Trueno — Revoltoso</option>
           </select>
-        </label>
-        <label>⛽ Carga inicial:
-          <input type="range" id="start-fuel" min="0" max="100" value="65" step="1">
-          <span id="start-fuel-value">65</span> kg
-        </label>
-        <div class="fuel-marks">
-          <span>22kg (3 paradas)</span>
-          <span>30kg (2 paradas)</span>
-          <span>100kg (0 paradas)</span>
+        </div>
+
+        <div class="preparatoria-section">
+          <h2>CONFIGURACIÓN COCHE</h2>
+          <div class="setup-driver" id="setup-d1">
+            <h3>JUG-1 <span class="setup-level">(N3)</span></h3>
+            <div class="setup-params">
+              <label>Carga alar:
+                <select id="prep-d1-alar">
+                  <option value="baja">Baja</option>
+                  <option value="media">Media</option>
+                  <option value="alta">Alta</option>
+                </select>
+              </label>
+              <label>Ratio cambio:
+                <select id="prep-d1-ratio">
+                  <option value="corto">Corto</option>
+                  <option value="medio">Medio</option>
+                  <option value="largo">Largo</option>
+                </select>
+              </label>
+              <label>Altura:
+                <select id="prep-d1-altura">
+                  <option value="baja">Baja</option>
+                  <option value="media">Media</option>
+                  <option value="alta">Alta</option>
+                </select>
+              </label>
+            </div>
+            <div class="setup-factory">
+              <span class="factory-label">Fábrica: <span id="prep-d1-factory">—</span></span>
+            </div>
+          </div>
+
+          <div class="setup-driver" id="setup-d2">
+            <h3>JUG-2 <span class="setup-level">(N3)</span></h3>
+            <div class="setup-params">
+              <label>Carga alar:
+                <select id="prep-d2-alar">
+                  <option value="baja">Baja</option>
+                  <option value="media">Media</option>
+                  <option value="alta">Alta</option>
+                </select>
+              </label>
+              <label>Ratio cambio:
+                <select id="prep-d2-ratio">
+                  <option value="corto">Corto</option>
+                  <option value="medio">Medio</option>
+                  <option value="largo">Largo</option>
+                </select>
+              </label>
+              <label>Altura:
+                <select id="prep-d2-altura">
+                  <option value="baja">Baja</option>
+                  <option value="media">Media</option>
+                  <option value="alta">Alta</option>
+                </select>
+              </label>
+            </div>
+            <div class="setup-factory">
+              <span class="factory-label">Fábrica: <span id="prep-d2-factory">—</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="preparatoria-section">
+          <h2>PRUEBAS</h2>
+          <div class="test-driver" id="test-d1">
+            <h3>JUG-1 <span class="tandas-count">Tandas: 0/5</span></h3>
+            <button id="test-d1-btn" class="test-btn" disabled>INICIAR TANDA (5 vtas)</button>
+            <div class="test-results" id="test-d1-results">
+              <p class="test-pending">Selecciona un circuito para empezar las pruebas.</p>
+            </div>
+          </div>
+          <div class="test-driver" id="test-d2">
+            <h3>JUG-2 <span class="tandas-count">Tandas: 0/5</span></h3>
+            <button id="test-d2-btn" class="test-btn" disabled>INICIAR TANDA (5 vtas)</button>
+            <div class="test-results" id="test-d2-results">
+              <p class="test-pending">Selecciona un circuito para empezar las pruebas.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="preparatoria-bottom">
+          <div class="prep-race-config">
+            <label>Neumático inicio:
+              <select id="prep-start-tyre">
+                <option value="soft">🟥 Blando</option>
+                <option value="medium" selected>🟨 Medio</option>
+                <option value="hard">⬜ Duro</option>
+                <option value="inter">🟢 Intermedio</option>
+                <option value="wet">🔵 Lluvia</option>
+              </select>
+            </label>
+            <label>⛽ Carga inicial:
+              <input type="range" id="prep-start-fuel" min="0" max="100" value="65" step="1">
+              <span id="prep-start-fuel-value">65</span> kg
+            </label>
+            <div class="fuel-marks">
+              <span>22kg (3 paradas)</span>
+              <span>30kg (2 paradas)</span>
+              <span>100kg (0 paradas)</span>
+            </div>
+          </div>
+          <div class="prep-weather">
+            <span>☀️ 24°C · 🌧 Lluvia en vta 25</span>
+          </div>
+          <button id="prep-start-race-btn" disabled>INICIAR CARRERA</button>
         </div>
       </div>
-
-      <button id="start-race-btn">🏁 INICIAR CARRERA</button>
     </div>
 
     <div id="race-screen">

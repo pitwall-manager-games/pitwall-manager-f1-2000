@@ -145,6 +145,311 @@ html, body {
   border-color: var(--accent-red);
 }
 
+#economica-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  padding: 2rem;
+  gap: 1.5rem;
+  overflow-y: auto;
+}
+
+#economica-screen h1 {
+  font-size: 1.8rem;
+  letter-spacing: 0.15em;
+  color: var(--accent-blue);
+}
+
+.economica-content {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 450px;
+  max-width: 550px;
+}
+
+.budget-display {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.1rem;
+  color: var(--accent-yellow);
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.economica-section h2 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent-blue);
+  margin-bottom: 0.75rem;
+  border-bottom: 1px dotted var(--border-color);
+  padding-bottom: 0.25rem;
+}
+
+.partida-row, .piloto-select {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.partida-row h3, .piloto-select h3 {
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.economica-total {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem 1rem;
+  font-size: 0.85rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.economica-total span:nth-child(even) {
+  text-align: right;
+  color: var(--accent-yellow);
+  font-weight: bold;
+}
+
+#eco-continue-btn {
+  background: var(--accent-blue);
+  color: #fff;
+  border: none;
+  padding: 0.75rem 2rem;
+  font-family: inherit;
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  width: 100%;
+}
+
+#eco-continue-btn:hover {
+  opacity: 0.85;
+}
+
+#preparatoria-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  padding: 1.5rem;
+  gap: 1.25rem;
+  overflow-y: auto;
+}
+
+#preparatoria-screen h1 {
+  font-size: 1.6rem;
+  letter-spacing: 0.15em;
+  color: var(--accent-yellow);
+}
+
+.preparatoria-content {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 520px;
+  max-width: 650px;
+}
+
+.preparatoria-section h2 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent-blue);
+  margin-bottom: 0.5rem;
+  border-bottom: 1px dotted var(--border-color);
+  padding-bottom: 0.25rem;
+}
+
+#prep-circuit {
+  width: 100%;
+  margin-bottom: 0.25rem;
+}
+
+.setup-driver {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.setup-driver h3 {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  margin-bottom: 0.4rem;
+}
+
+.setup-level {
+  color: var(--text-secondary);
+  font-weight: normal;
+  font-size: 0.7rem;
+}
+
+.setup-params {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.setup-params label {
+  margin-bottom: 0;
+}
+
+.setup-factory {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 0.2rem;
+}
+
+.factory-label {
+  display: inline-block;
+}
+
+.test-driver {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.test-driver h3 {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  margin-bottom: 0.4rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.tandas-count {
+  color: var(--text-secondary);
+  font-weight: normal;
+  font-size: 0.7rem;
+}
+
+.test-btn {
+  background: var(--accent-green);
+  color: #000;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  margin-bottom: 0.3rem;
+}
+
+.test-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.test-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.test-results {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.test-pending {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.test-tanda {
+  border-top: 1px dotted var(--border-color);
+  padding: 0.3rem 0;
+  color: var(--accent-green);
+}
+
+.test-tanda .tanda-avg {
+  color: var(--accent-yellow);
+}
+
+.test-tanda .tanda-best {
+  color: var(--accent-blue);
+}
+
+.preparatoria-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.prep-race-config {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.prep-race-config label {
+  margin-bottom: 0;
+}
+
+.prep-weather {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+#prep-start-race-btn {
+  background: var(--accent-red);
+  color: #fff;
+  border: none;
+  padding: 0.7rem 2rem;
+  font-family: inherit;
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  width: 100%;
+}
+
+#prep-start-race-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+#prep-start-race-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#start-setup-btn {
+  background: var(--accent-blue);
+  color: #fff;
+  border: none;
+  padding: 0.75rem 2rem;
+  font-family: inherit;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+#start-setup-btn:hover {
+  opacity: 0.85;
+}
+
 #race-screen {
   display: none;
   flex-direction: column;

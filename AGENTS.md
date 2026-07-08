@@ -16,15 +16,19 @@
 - **Vanilla JS** (ES6 modules, `"type": "module"` in package.json) — no framework, no bundler, no build step, no TypeScript.
 - **Entrypoint:** `src/index.html` — open directly in browser or use `pnpm run dev`.
 - **Global state** lives in the `state` object inside `src/js/app.js`.
-- **Canvas rendering** in `src/js/track.js` (Track class, 2D circuit drawing).
-- **Physics/formulas** in `src/js/physics.js` (tyre degradation, fuel consumption, pit stop timing).
+- **Canvas rendering** in `src/js/track.js` (Track class, 2D circuit drawing, slot-car modular sections).
+- **Physics/formulas** in `src/js/physics.js` (tyre degradation, fuel consumption, pit stop timing, driver attributes, car components).
 - **CSS** in `src/css/style.css` — CSS Grid layout, dark theme, monospace font stack.
-- **Game Design Document:** `docs/gdd/index.md` — read before implementing gameplay features.
+- **Game Design Document:** `docs/GDD.md` — read before implementing gameplay features.
 
 ## Architecture Notes
 
 - No routing, no SSR, no API — pure browser-side game.
-- Game loop via `requestAnimationFrame` in `app.js`.
+- **Game loop** via tick-based async timer in `app.js` (not continuous `requestAnimationFrame` for race simulation; UI render via `requestAnimationFrame`).
+- **3-screen flow:** Económica (budget) → Preparatoria (circuit + setup + testing) → Carrera (race).
+- **Circuit** is divided into slot-car modular sections (recta, curva, chicane, etc.), each with length, car capacity, and independent wetness state.
+- **Drivers** have 5 attributes (Habilidad, Experiencia, Rendimiento en mojado, Consistencia, Reflejos) and 3 personality traits (Agresividad, Lealtad, Confianza).
+- **Cars** have 2 budget lines (Motor+Caja, Chasis+Aero) with internal balance sliders.
 - Modules use ES6 `import`/`export` — loaded natively by the browser, no bundler.
 - Oxlint config at `.oxlintrc.json` (plugins: typescript, unicorn, oxc). Only `correctness` category is error.
 - `.gitignore` excludes `node_modules/` only.
