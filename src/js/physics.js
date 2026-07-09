@@ -207,6 +207,38 @@ export const AI_PERSONALITY_CONFIG = {
   },
 }
 
+export const CORNER_WEAR_FACTORS = {
+  R1: 2.0,
+  R2: 1.6,
+  R3: 1.3,
+  R4: 1.1,
+}
+
+export const TYRE_WEAR_PROFILES = {
+  recta: { fl: 1.0, fr: 1.0, rl: 1.0, rr: 1.0 },
+  recta_salida: { fl: 1.0, fr: 1.0, rl: 1.0, rr: 1.0 },
+  recta_parrilla: { fl: 1.0, fr: 1.0, rl: 1.0, rr: 1.0 },
+  recta_boxes: { fl: 1.0, fr: 1.0, rl: 1.0, rr: 1.0 },
+  recta_aceleracion: { fl: 1.0, fr: 1.0, rl: 1.5, rr: 1.5 },
+  Y_entrada: { fl: 1.8, fr: 1.8, rl: 1.0, rr: 1.0 },
+  Y_salida: { fl: 1.0, fr: 1.0, rl: 1.5, rr: 1.5 },
+}
+
+export function getTyreWearMultipliers(piece) {
+  if (!piece) return { fl: 1.0, fr: 1.0, rl: 1.0, rr: 1.0 }
+
+  if (piece.type.startsWith('R') && piece.dir) {
+    const factor = CORNER_WEAR_FACTORS[piece.type] || 1.0
+    if (piece.dir === 'left') {
+      return { fl: 1.0, fr: 1.0 + factor, rl: 1.0, rr: 1.0 + factor }
+    } else {
+      return { fl: 1.0 + factor, fr: 1.0, rl: 1.0 + factor, rr: 1.0 }
+    }
+  }
+
+  return TYRE_WEAR_PROFILES[piece.type] || { fl: 1.0, fr: 1.0, rl: 1.0, rr: 1.0 }
+}
+
 export function pickWeighted(biasMap) {
   const keys = Object.keys(biasMap).map(Number)
   const weights = keys.map(k => biasMap[k])

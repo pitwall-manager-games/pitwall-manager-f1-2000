@@ -1,14 +1,19 @@
 import { Track } from './track.js';
+import { CIRCUIT_DATA } from './circuits.js';
 import {
-  calcTyreWear, calcFuelConsumption, calcPitStopTime,
+  calcFuelConsumption, calcPitStopTime,
   TYRE_CONFIG, FUEL_CAPACITY, BUDGET,
   DRIVER_LEVELS, ENGINE_TIERS, CHASSIS_TIERS,
   generateDriverAttributes,
   AI_PERSONALITY_CONFIG, pickWeighted,
   computeFactorySetup, SETUP_SCORE,
+  getTyreWearMultipliers,
 } from './physics.js';
 
-const TOTAL_LAPS = 60;
+const PIECE_LENGTH = 20
+const CORNER_RADII = { R1: 15, R2: 25, R3: 35, R4: 45 }
+const TICKS_PER_LAP_TARGET = 250
+const BASE_WEAR_PER_TICK = 0.03
 
 const TEAM_COLORS = {
   rojo: '#ff4444',
@@ -45,17 +50,22 @@ function createAIDrivers() {
         team: team.color,
         pace: 'normal',
         engine: 'normal',
-        tyreWear: 0,
-        fuel: 65,
-        targetFuel: 65,
-        stress: 10 + Math.random() * 20,
-        fatigue: 5 + Math.random() * 10,
-        pitRequested: false,
-        selectedTyre: 'medium',
+    tyreWearFL: 0,
+    tyreWearFR: 0,
+    tyreWearRL: 0,
+    tyreWearRR: 0,
+    fuel: 65,
+    targetFuel: 65,
+    stress: 10 + Math.random() * 20,
+    fatigue: 5 + Math.random() * 10,
+    engineTemp: 90,
+    pitRequested: false,
+    selectedTyre: 'medium',
         lapsOnTyre: 0,
-        lapsCompleted: 0,
-        progress: 0,
-        isPlayer: false,
+    lapsCompleted: 0,
+    pieceIndex: 0,
+    pieceMeters: 0,
+    isPlayer: false,
         level,
         attributes: attrs,
         personality: {
@@ -79,14 +89,15 @@ function createAIDrivers() {
 
 function createPlayerDrivers() {
   return [
-    { id: 1, name: 'JUG-1', team: 'jug', pace: 'normal', engine: 'normal', tyreWear: 0, fuel: 65, targetFuel: 65, stress: 20, fatigue: 10, pitRequested: false, selectedTyre: 'medium', lapsOnTyre: 0, lapsCompleted: 0, progress: 0, isPlayer: true, level: 3, attributes: generateDriverAttributes(3), personality: { agresividad: 5, lealtad: 5, confianza: 50 }, car: null },
-    { id: 2, name: 'JUG-2', team: 'jug', pace: 'normal', engine: 'normal', tyreWear: 0, fuel: 65, targetFuel: 65, stress: 10, fatigue: 5, pitRequested: false, selectedTyre: 'medium', lapsOnTyre: 0, lapsCompleted: 0, progress: 0, isPlayer: true, level: 3, attributes: generateDriverAttributes(3), personality: { agresividad: 5, lealtad: 5, confianza: 50 }, car: null },
+    { id: 1, name: 'JUG-1', team: 'jug', pace: 'normal', engine: 'normal', tyreWearFL: 0, tyreWearFR: 0, tyreWearRL: 0, tyreWearRR: 0, fuel: 65, targetFuel: 65, stress: 20, fatigue: 10, engineTemp: 90, pitRequested: false, selectedTyre: 'medium', lapsOnTyre: 0, lapsCompleted: 0, pieceIndex: 0, pieceMeters: 0, isPlayer: true, level: 3, attributes: generateDriverAttributes(3), personality: { agresividad: 5, lealtad: 5, confianza: 50 }, car: null },
+    { id: 2, name: 'JUG-2', team: 'jug', pace: 'normal', engine: 'normal', tyreWearFL: 0, tyreWearFR: 0, tyreWearRL: 0, tyreWearRR: 0, fuel: 65, targetFuel: 65, stress: 10, fatigue: 5, engineTemp: 90, pitRequested: false, selectedTyre: 'medium', lapsOnTyre: 0, lapsCompleted: 0, pieceIndex: 0, pieceMeters: 0, isPlayer: true, level: 3, attributes: generateDriverAttributes(3), personality: { agresividad: 5, lealtad: 5, confianza: 50 }, car: null },
   ]
 }
 
 const state = {
   mode: 'classic',
   currentLap: 1,
+  totalLaps: 60,
   weather: 'dry',
   forecast: { changeLap: 25, nextWeather: 'rain' },
   phase: 'economica',
@@ -98,6 +109,7 @@ const state = {
     chassisSlider: 0,
   },
   selectedCircuit: null,
+  circuitData: null,
   factorySetup: null,
   drivers: createPlayerDrivers(),
   testTandas: { 1: [], 2: [] },
@@ -337,19 +349,25 @@ function init() {
       ...createAIDrivers(),
     ]
 
+    const circuitData = CIRCUIT_DATA[state.selectedCircuit]
+    if (!circuitData) return
+    state.circuitData = circuitData
+    state.totalLaps = circuitData.laps
+
     allDrivers.forEach(d => {
-      if (!d.progress) d.progress = 0
+      if (d.pieceIndex === undefined) d.pieceIndex = 0
+      if (d.pieceMeters === undefined) d.pieceMeters = 0
       if (!d.lapsCompleted) d.lapsCompleted = 0
       if (!d.lapsOnTyre) d.lapsOnTyre = 0
-      if (!d.tyreWear) d.tyreWear = 0
+      if (!d.tyreWearFL && d.tyreWearFL !== 0) { d.tyreWearFL = 0; d.tyreWearFR = 0; d.tyreWearRL = 0; d.tyreWearRR = 0 }
+      if (!d.engineTemp) d.engineTemp = 90
       if (!d.stress) d.stress = 15 + Math.random() * 15
       if (!d.fatigue) d.fatigue = 5 + Math.random() * 10
     })
 
     state.drivers = allDrivers
 
-    const canvas = document.getElementById('track-canvas')
-    track = new Track(canvas)
+    track = new Track('track-canvas', circuitData)
 
     bindUI()
     renderCarDiagrams()
@@ -421,17 +439,33 @@ function update() {
   state.drivers.forEach((driver) => {
     if (!driver.isPlayer) updateAIDriver(driver)
 
-    const progressGain = getProgressGain(driver, weather);
-    driver.progress += progressGain;
+    const progressMeters = getProgressGain(driver, weather)
+    driver.pieceMeters += progressMeters
 
-    if (driver.progress >= 100) {
-      completeLap(driver, weather);
+    updateEngineTemp(driver)
+    applyTyreWear(driver, weather)
+
+    const circuit = state.circuitData
+    const numPieces = circuit ? circuit.pieces.length : 1
+    while (driver.pieceMeters >= PIECE_LENGTH) {
+      driver.pieceMeters -= PIECE_LENGTH
+      driver.pieceIndex++
+      if (driver.pieceIndex >= numPieces) {
+        driver.pieceIndex = 0
+        driver.lapsCompleted++
+        completeLap(driver)
+      }
+      if (driver.pitRequested && circuit && circuit.pieces[driver.pieceIndex]) {
+        if (circuit.pieces[driver.pieceIndex].type === 'recta_boxes') {
+          executePitStop(driver)
+        }
+      }
     }
   });
 
   state.currentLap = Math.max(...state.drivers.map(d => d.lapsCompleted)) + 1
 
-  if (state.currentLap > TOTAL_LAPS) {
+  if (state.currentLap > (state.totalLaps || 60)) {
     endRace()
     return
   }
@@ -447,8 +481,8 @@ function updateAIDriver(d) {
 
   if (d.decisionTimer % 30 === 0) {
     const p = d.personality
-    const tyrePct = d.tyreWear / 100
-    const lapsRemaining = TOTAL_LAPS - (d.lapsCompleted || 0)
+    const tyrePct = Math.max(d.tyreWearFL, d.tyreWearFR, d.tyreWearRL, d.tyreWearRR) / 100
+    const lapsRemaining = (state.totalLaps || 60) - (d.lapsCompleted || 0)
     const enoughFuel = d.fuel > lapsRemaining * 3
 
     if (tyrePct > 0.7 || (!enoughFuel && d.lapsCompleted > 5)) {
@@ -509,6 +543,8 @@ document.getElementById('back-to-menu-btn').addEventListener('click', () => {
   state.budget = BUDGET
   state.car = { engineTier: 2, engineSlider: 0, chassisTier: 2, chassisSlider: 0 }
   state.selectedCircuit = null
+  state.circuitData = null
+  state.totalLaps = 60
   state.factorySetup = null
   state.testTandas = { 1: [], 2: [] }
   state.testTandasUsed = { 1: 0, 2: 0 }
@@ -523,73 +559,77 @@ function getCurrentWeather() {
 }
 
 function getProgressGain(driver, weather) {
+  const circuit = state.circuitData
+  const baseMetersPerTick = circuit ? circuit.length / TICKS_PER_LAP_TARGET : PIECE_LENGTH
+
   const baseSpeed = {
     attack: 1.2,
     normal: 1.0,
     defend: 0.9,
     conserve: 0.7,
-  };
+  }
 
   const engineBoost = {
     high: 1.15,
     normal: 1.0,
     low: 0.85,
-  };
+  }
 
-  const tyreDurability = TYRE_CONFIG[driver.selectedTyre]?.durability?.max || 35;
-  const tyreFactor = driver.lapsOnTyre < tyreDurability ? 1.0 : 0.6;
-  const fuelFactor = 1 - (driver.fuel / FUEL_CAPACITY) * 0.08;
-  const stressFactor = 1 - (driver.stress / 100) * 0.15;
-  const fatigueFactor = 1 - (driver.fatigue / 100) * 0.1;
+  const pace = baseSpeed[driver.pace] || 1.0
+  const engine = engineBoost[driver.engine] || 1.0
+  const tyreSpeed = TYRE_CONFIG[driver.selectedTyre]?.speed || 1.0
 
-  const pace = baseSpeed[driver.pace] || 1.0;
-  const engine = engineBoost[driver.engine] || 1.0;
-  const tyreSpeed = TYRE_CONFIG[driver.selectedTyre]?.speed || 1.0;
+  const tyreAdherence = calcAvgTyreAdherence(driver)
+
+  const fuelFactor = 1 - (driver.fuel / FUEL_CAPACITY) * 0.08
+  const stressFactor = 1 - (driver.stress / 100) * 0.15
+  const fatigueFactor = 1 - (driver.fatigue / 100) * 0.1
 
   let weatherFactor = 1.0
   if (weather === 'rain') {
-    if (driver.selectedTyre === 'wet' || driver.selectedTyre === 'inter') {
-      weatherFactor = 0.92
-    } else {
-      weatherFactor = 0.55
+    weatherFactor = ['wet', 'inter'].includes(driver.selectedTyre) ? 0.92 : 0.55
+  } else if (['wet', 'inter'].includes(driver.selectedTyre)) {
+    weatherFactor = 0.85
+  }
+
+  let pieceFactor = 1.0
+  if (circuit && circuit.pieces[driver.pieceIndex]) {
+    const piece = circuit.pieces[driver.pieceIndex]
+    if (['R1', 'R2', 'R3', 'R4'].includes(piece.type)) {
+      const radius = CORNER_RADII[piece.type]
+      pieceFactor = Math.min(1.0, 0.3 + (radius / 45) * 0.7)
     }
-  } else {
-    if (driver.selectedTyre === 'wet' || driver.selectedTyre === 'inter') {
-      weatherFactor = 0.85
+    if ((piece.type === 'Y_entrada' || piece.type === 'recta_boxes' || piece.type === 'recta_aceleracion') && driver.pitRequested) {
+      pieceFactor = Math.min(pieceFactor, 0.25)
     }
   }
 
-  return 0.5 * pace * engine * tyreSpeed * tyreFactor * fuelFactor * stressFactor * fatigueFactor * weatherFactor;
+  return baseMetersPerTick * pace * engine * tyreSpeed * tyreAdherence * fuelFactor * stressFactor * fatigueFactor * weatherFactor * pieceFactor
 }
 
-function completeLap(driver, weather) {
-  driver.progress = 0;
+function completeLap(driver) {
   driver.lapsOnTyre += 1;
-
-  const tyreWearLap = calcTyreWear(driver.pace, 1, weather === 'rain');
-  driver.tyreWear = Math.min(100, driver.tyreWear + tyreWearLap);
 
   const fuelConsumed = calcFuelConsumption(driver.engine, 1);
   driver.fuel = Math.max(0, driver.fuel - fuelConsumed);
-
-  if (driver.pitRequested) {
-    executePitStop(driver);
-  }
 
   updateDriverState(driver);
 }
 
 function executePitStop(driver) {
   const fuelToAdd = Math.max(0, driver.targetFuel - driver.fuel)
-  const pitTime = calcPitStopTime(fuelToAdd)
 
-  driver.tyreWear = 0
+  driver.tyreWearFL = 0
+  driver.tyreWearFR = 0
+  driver.tyreWearRL = 0
+  driver.tyreWearRR = 0
   driver.lapsOnTyre = 0
   driver.fuel = driver.targetFuel
   driver.pitRequested = false
 
-  const PROGRESS_PER_SECOND = 4.74
-  driver.progress -= pitTime * PROGRESS_PER_SECOND
+  const baseMetersPerTick = state.circuitData ? state.circuitData.length / TICKS_PER_LAP_TARGET : PIECE_LENGTH
+  const metersLost = calcPitStopTime(fuelToAdd) * baseMetersPerTick * 10
+  driver.pieceMeters = Math.max(0, driver.pieceMeters - metersLost)
 }
 
 function updateDriverState(driver) {
@@ -605,12 +645,68 @@ function updateDriverState(driver) {
   }
 }
 
+function updateEngineTemp(driver) {
+  const dirtyAir = detectDirtyAir(driver)
+
+  if (driver.pace === 'attack') {
+    driver.engineTemp = Math.min(150, driver.engineTemp + 2)
+  } else if (driver.pace === 'conserve') {
+    driver.engineTemp = Math.max(60, driver.engineTemp - 3)
+  } else {
+    driver.engineTemp = Math.max(60, driver.engineTemp - 1)
+  }
+
+  if (dirtyAir) {
+    driver.engineTemp = Math.min(150, driver.engineTemp + 1)
+  }
+
+  if (driver.engineTemp > 120 && driver.car && driver.car.reliability) {
+    driver.car.reliability.motor = Math.max(0, driver.car.reliability.motor - 0.5)
+  }
+}
+
+function detectDirtyAir(driver) {
+  const circuit = state.circuitData
+  if (!circuit) return false
+  return state.drivers.some(other => {
+    if (other.id === driver.id) return false
+    const myMeters = driver.pieceMeters + driver.pieceIndex * PIECE_LENGTH + driver.lapsCompleted * circuit.length
+    const otherMeters = other.pieceMeters + other.pieceIndex * PIECE_LENGTH + other.lapsCompleted * circuit.length
+    const diff = Math.abs(myMeters - otherMeters)
+    return diff > 0 && diff < 50
+  })
+}
+
+function applyTyreWear(driver, weather) {
+  const circuit = state.circuitData
+  if (!circuit) return
+
+  const piece = circuit.pieces[driver.pieceIndex]
+  if (!piece) return
+
+  const mult = getTyreWearMultipliers(piece)
+
+  const paceMult = { attack: 1.5, normal: 1.0, defend: 1.2, conserve: 0.7 }[driver.pace] || 1.0
+  const wetMult = weather === 'rain' ? 1.3 : 1.0
+  const ageMult = 1 + (driver.lapsOnTyre || 0) * 0.05
+  const totalMult = paceMult * wetMult * ageMult
+
+  driver.tyreWearFL = Math.min(100, driver.tyreWearFL + BASE_WEAR_PER_TICK * mult.fl * totalMult)
+  driver.tyreWearFR = Math.min(100, driver.tyreWearFR + BASE_WEAR_PER_TICK * mult.fr * totalMult)
+  driver.tyreWearRL = Math.min(100, driver.tyreWearRL + BASE_WEAR_PER_TICK * mult.rl * totalMult)
+  driver.tyreWearRR = Math.min(100, driver.tyreWearRR + BASE_WEAR_PER_TICK * mult.rr * totalMult)
+}
+
 function renderTiming() {
-  document.getElementById('current-lap').textContent = Math.min(state.currentLap, TOTAL_LAPS);
+  document.getElementById('current-lap').textContent = Math.min(state.currentLap, state.totalLaps || 60)
+  document.getElementById('total-laps').textContent = state.totalLaps || 60
+
+  const circuit = state.circuitData
+  const len = circuit ? circuit.length : PIECE_LENGTH * 240
 
   const sorted = [...state.drivers].sort((a, b) => {
-    const aTotal = a.lapsCompleted * 100 + a.progress
-    const bTotal = b.lapsCompleted * 100 + b.progress
+    const aTotal = a.lapsCompleted * len + a.pieceIndex * PIECE_LENGTH + a.pieceMeters
+    const bTotal = b.lapsCompleted * len + b.pieceIndex * PIECE_LENGTH + b.pieceMeters
     return bTotal - aTotal
   })
 
@@ -635,161 +731,228 @@ function renderTiming() {
 }
 
 function renderStatus() {
-  state.drivers.forEach((driver, i) => {
-    const prefix = `d${i + 1}`;
-    document.getElementById(`${prefix}-stress`).style.width = `${driver.stress}%`;
-    document.getElementById(`${prefix}-stress-value`).textContent = `${Math.round(driver.stress)}%`;
-    document.getElementById(`${prefix}-fatigue`).style.width = `${driver.fatigue}%`;
-    document.getElementById(`${prefix}-fatigue-value`).textContent = `${Math.round(driver.fatigue)}%`;
-  });
+  for (let i = 0; i < 2; i++) {
+    const driver = state.drivers[i]
+    if (!driver) continue
+    const prefix = `d${i + 1}`
+    const stressBar = document.getElementById(`${prefix}-stress`)
+    const stressLabel = document.getElementById(`${prefix}-stress-value`)
+    const fatigueBar = document.getElementById(`${prefix}-fatigue`)
+    const fatigueLabel = document.getElementById(`${prefix}-fatigue-value`)
+    if (stressBar) stressBar.style.width = `${driver.stress}%`
+    if (stressLabel) stressLabel.textContent = `${Math.round(driver.stress)}%`
+    if (fatigueBar) fatigueBar.style.width = `${driver.fatigue}%`
+    if (fatigueLabel) fatigueLabel.textContent = `${Math.round(driver.fatigue)}%`
+  }
+}
+
+function renderCarSVG() {
+  for (let i = 0; i < 2; i++) {
+    const driver = state.drivers[i]
+    if (!driver) continue
+    const idx = i + 1
+
+    const parts = [
+      { id: `d${idx}-front-wing`, wear: getCarPartHealth(driver, 'frontWing') },
+      { id: `d${idx}-rear-wing`, wear: getCarPartHealth(driver, 'rearWing') },
+      { id: `d${idx}-engine`, wear: getCarPartHealth(driver, 'engine') },
+      { id: `d${idx}-gearbox`, wear: getCarPartHealth(driver, 'gearbox') },
+      { id: `d${idx}-tyre-fl`, wear: driver.tyreWearFL },
+      { id: `d${idx}-tyre-fr`, wear: driver.tyreWearFR },
+      { id: `d${idx}-tyre-rl`, wear: driver.tyreWearRL },
+      { id: `d${idx}-tyre-rr`, wear: driver.tyreWearRR },
+    ]
+
+    parts.forEach(({ id, wear }) => {
+      const el = document.getElementById(id)
+      if (!el) return
+      if (id.includes('tyre')) {
+        el.setAttribute('fill', getTyreColor(wear))
+      } else {
+        el.setAttribute('fill', getPartColor(wear))
+      }
+    })
+
+    const tempPct = Math.min(100, ((driver.engineTemp - 60) / 90) * 100)
+    const tempBar = document.getElementById(`d${idx}-engine-temp`)
+    const tempLabel = document.getElementById(`d${idx}-engine-temp-value`)
+    if (tempBar && tempLabel) {
+      tempBar.style.width = `${Math.max(0, tempPct)}%`
+      tempLabel.textContent = `${Math.round(driver.engineTemp)}°C`
+
+      if (driver.engineTemp > 120) {
+        tempBar.style.background = 'var(--accent-red)'
+      } else if (driver.engineTemp > 100) {
+        tempBar.style.background = 'var(--accent-yellow)'
+      } else {
+        tempBar.style.background = 'var(--accent-green)'
+      }
+    }
+
+    const heading = document.querySelector(`#driver${idx}-status .driver-name-heading`)
+    if (heading) {
+      heading.textContent = driver.name
+    }
+  }
+}
+
+function getCarPartHealth(driver, part) {
+  if (!driver.car || !driver.car.reliability) return 100
+  switch (part) {
+    case 'frontWing':
+    case 'rearWing':
+      return driver.car.reliability.aero
+    case 'engine':
+      return driver.car.reliability.motor
+    case 'gearbox':
+      return driver.car.reliability.caja
+    default:
+      return 100
+  }
 }
 
 function renderCarDiagrams() {
-  state.drivers.forEach((driver, i) => {
-    const canvas = document.getElementById(`car-canvas-d${i + 1}`);
-    drawCarDiagram(canvas, driver);
-  });
-}
-
-function drawCarDiagram(canvas, driver) {
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width;
-  const h = canvas.height;
-
-  ctx.clearRect(0, 0, w, h);
-
-  const cx = w / 2;
-  const bodyTop = 30;
-
-  const tyreColor = getTyreColor(driver.tyreWear);
-  const partColor = (wear) => {
-    if (wear < 30) return 'rgba(255,255,255,0.15)';
-    if (wear < 60) return '#ffcc00';
-    return '#ff3344';
-  };
-
-  const bodyWear = (driver.tyreWear + driver.lapsOnTyre * 2) / 2
-  const frontWingWear = driver.tyreWear * 0.8
-  const rearWingWear = driver.tyreWear * 0.8
-  const noseWear = driver.stress * 1.2
-  const engineWear = driver.engine === 'high' ? 60 : driver.engine === 'low' ? 10 : 30
-
-  ctx.save();
-
-  ctx.translate(cx, bodyTop);
-  ctx.strokeStyle = '#8888a0';
-  ctx.lineWidth = 1.5;
-
-  ctx.fillStyle = partColor(noseWear);
-  ctx.beginPath();
-  ctx.moveTo(0, -5);
-  ctx.lineTo(-8, 5);
-  ctx.lineTo(8, 5);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.fillStyle = partColor(frontWingWear);
-  ctx.beginPath();
-  ctx.moveTo(-35, 8);
-  ctx.lineTo(-20, 5);
-  ctx.lineTo(-15, 8);
-  ctx.lineTo(-35, 12);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(35, 8);
-  ctx.lineTo(20, 5);
-  ctx.lineTo(15, 8);
-  ctx.lineTo(35, 12);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.fillStyle = partColor(bodyWear);
-  ctx.beginPath();
-  ctx.moveTo(-12, 5);
-  ctx.lineTo(-15, 60);
-  ctx.lineTo(15, 60);
-  ctx.lineTo(12, 5);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(-20, 60);
-  ctx.lineTo(-18, 100);
-  ctx.lineTo(18, 100);
-  ctx.lineTo(20, 60);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(-15, 100);
-  ctx.lineTo(-12, 130);
-  ctx.lineTo(12, 130);
-  ctx.lineTo(15, 100);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.fillStyle = partColor(engineWear);
-  ctx.beginPath();
-  ctx.moveTo(-16, 130);
-  ctx.lineTo(-18, 155);
-  ctx.lineTo(18, 155);
-  ctx.lineTo(16, 130);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.fillStyle = partColor(rearWingWear);
-  ctx.beginPath();
-  ctx.moveTo(-36, 155);
-  ctx.lineTo(-18, 150);
-  ctx.lineTo(-15, 155);
-  ctx.lineTo(-36, 162);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(36, 155);
-  ctx.lineTo(18, 150);
-  ctx.lineTo(15, 155);
-  ctx.lineTo(36, 162);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.restore();
-
-  const tyrePositions = [
-    { x: cx - 16, y: bodyTop + 35, label: 'DI' },
-    { x: cx + 10, y: bodyTop + 35, label: 'DD' },
-    { x: cx - 16, y: bodyTop + 120, label: 'TI' },
-    { x: cx + 10, y: bodyTop + 120, label: 'TD' },
-  ];
-
-  tyrePositions.forEach(({ x, y }) => {
-    ctx.fillStyle = tyreColor;
-    ctx.beginPath();
-    ctx.arc(x, y, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#666688';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  });
+  renderCarSVG()
 }
 
 function getTyreColor(wear) {
-  if (wear < 5) return '#ffcc00';
-  if (wear < 30) return '#33ff77';
-  if (wear < 70) return '#ffcc00';
-  return '#ff3344';
+  if (wear >= 92) {
+    const t = (wear - 92) / 8
+    return lerpColor('#bbbbcc', '#33ff77', 1 - t)
+  }
+  if (wear >= 32) return '#33ff77'
+  if (wear >= 28) {
+    const t = (wear - 28) / 4
+    return lerpColor('#33ff77', '#ffcc00', 1 - t)
+  }
+  if (wear >= 12) return '#ffcc00'
+  if (wear >= 8) {
+    const t = (wear - 8) / 4
+    return lerpColor('#ffcc00', '#ff3344', 1 - t)
+  }
+  return '#ff3344'
 }
 
-document.addEventListener('DOMContentLoaded', init);
+function getPartColor(health) {
+  if (health >= 60) return 'rgba(0,170,255,0.2)'
+  if (health >= 20) return '#ffcc00'
+  return '#ff3344'
+}
+
+function calcAvgTyreAdherence(driver) {
+  const wears = [driver.tyreWearFL, driver.tyreWearFR, driver.tyreWearRL, driver.tyreWearRR]
+
+  const adherence = wears.map(w => {
+    if (w >= 92) return 0.85 + (0.15 * (w - 92) / 8)
+    if (w >= 32) return 1.0
+    if (w >= 28) return 1.0 - (0.15 * (32 - w) / 4)
+    if (w >= 12) return 0.85
+    if (w >= 8) return 0.85 - (0.25 * (12 - w) / 4)
+    return 0.6
+  })
+
+  const avg = adherence.reduce((a, b) => a + b, 0) / adherence.length
+  const worst = Math.min(...adherence)
+  return avg * 0.4 + worst * 0.6
+}
+
+function lerpColor(c1, c2, t) {
+  const parse = c => c.match(/[\da-f]{2}/gi).map(x => parseInt(x, 16))
+  const [r1, g1, b1] = parse(c1)
+  const [r2, g2, b2] = parse(c2)
+  const r = Math.round(r1 + (r2 - r1) * t)
+  const g = Math.round(g1 + (g2 - g1) * t)
+  const b = Math.round(b1 + (b2 - b1) * t)
+  return `rgb(${r},${g},${b})`
+}
+
+function initCarTooltips() {
+  const svgs = [document.getElementById('car-svg-d1'), document.getElementById('car-svg-d2')]
+  const tooltip = document.getElementById('car-tooltip')
+
+  svgs.forEach((svg, idx) => {
+    if (!svg) return
+    const driver = state.drivers[idx]
+    if (!driver) return
+
+    const pieceInfo = {
+      'tyre-fl': { name: 'Rueda FL', getStatus: (d) => tyreStatusText(d.tyreWearFL), getEffect: (d) => tyreEffectText(d.tyreWearFL) },
+      'tyre-fr': { name: 'Rueda FR', getStatus: (d) => tyreStatusText(d.tyreWearFR), getEffect: (d) => tyreEffectText(d.tyreWearFR) },
+      'tyre-rl': { name: 'Rueda RL', getStatus: (d) => tyreStatusText(d.tyreWearRL), getEffect: (d) => tyreEffectText(d.tyreWearRL) },
+      'tyre-rr': { name: 'Rueda RR', getStatus: (d) => tyreStatusText(d.tyreWearRR), getEffect: (d) => tyreEffectText(d.tyreWearRR) },
+      'front-wing': { name: 'Alerón Delantero', getStatus: (d) => partStatusText(getCarPartHealth(d, 'frontWing')), getEffect: (d) => partEffectText('frontWing', getCarPartHealth(d, 'frontWing')) },
+      'rear-wing': { name: 'Alerón Trasero', getStatus: (d) => partStatusText(getCarPartHealth(d, 'rearWing')), getEffect: (d) => partEffectText('rearWing', getCarPartHealth(d, 'rearWing')) },
+      'engine': { name: 'Motor V10', getStatus: (d) => `${Math.round(d.engineTemp)}°C · ${partStatusText(getCarPartHealth(d, 'engine'))}`, getEffect: (d) => d.engineTemp > 120 ? 'Sobrecalentamiento — salud del motor cayendo' : partEffectText('engine', getCarPartHealth(d, 'engine')) },
+      'gearbox': { name: 'Caja de cambios', getStatus: (d) => partStatusText(getCarPartHealth(d, 'gearbox')), getEffect: (d) => partEffectText('gearbox', getCarPartHealth(d, 'gearbox')) },
+    }
+
+    const di = idx + 1
+    Object.entries(pieceInfo).forEach(([pieceIdSuffix, info]) => {
+      const el = document.getElementById(`d${di}-${pieceIdSuffix}`)
+      if (!el) return
+
+      el.addEventListener('mouseenter', (e) => {
+        const d = state.drivers[idx]
+        if (!d) return
+        tooltip.querySelector('.tooltip-name').textContent = info.name
+        tooltip.querySelector('.tooltip-status').textContent = info.getStatus(d)
+        tooltip.querySelector('.tooltip-effect').textContent = info.getEffect(d)
+        tooltip.classList.remove('hidden')
+        positionTooltip(e)
+      })
+
+      el.addEventListener('mousemove', (e) => {
+        positionTooltip(e)
+      })
+
+      el.addEventListener('mouseleave', () => {
+        tooltip.classList.add('hidden')
+      })
+    })
+  })
+}
+
+function positionTooltip(e) {
+  const tooltip = document.getElementById('car-tooltip')
+  const x = e.clientX + 12
+  const y = e.clientY + 12
+  const maxX = window.innerWidth - tooltip.offsetWidth - 10
+  const maxY = window.innerHeight - tooltip.offsetHeight - 10
+  tooltip.style.left = `${Math.min(x, maxX)}px`
+  tooltip.style.top = `${Math.min(y, maxY)}px`
+}
+
+function tyreStatusText(wear) {
+  if (wear >= 92) return 'Nuevo'
+  if (wear >= 32) return 'Óptimo'
+  if (wear >= 12) return 'Degradado'
+  return 'Crítico'
+}
+
+function tyreEffectText(wear) {
+  if (wear >= 92) return 'Adherencia: 85% — neumático frío'
+  if (wear >= 32) return 'Adherencia: 100% — ventana óptima'
+  if (wear >= 12) return 'Adherencia: 85% — pérdida de agarre'
+  if (wear >= 8) return 'Adherencia: 85%→60% — degradación severa'
+  return 'Adherencia: 60% — neumático destruido'
+}
+
+function partStatusText(health) {
+  if (health >= 60) return 'Bien'
+  if (health >= 20) return 'Dañado'
+  return 'Crítico'
+}
+
+function partEffectText(part, health) {
+  if (health >= 60) return 'Funcionamiento normal'
+  if (part === 'frontWing') return 'Subviraje severo — neumáticos delanteros se destruyen'
+  if (part === 'rearWing') return 'Inestabilidad en curvas — riesgo de trompo'
+  if (part === 'engine') return 'Pérdida de potencia'
+  if (part === 'gearbox') return 'Pérdida de marchas — velocidad punta reducida'
+  return ''
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  init()
+  initCarTooltips()
+});

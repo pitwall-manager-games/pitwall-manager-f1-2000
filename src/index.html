@@ -242,7 +242,7 @@
 
         <section id="track-panel">
           <h2>🏁 CIRCUITO</h2>
-          <canvas id="track-canvas"></canvas>
+          <div id="track-canvas"></div>
         </section>
 
         <section id="right-panel">
@@ -340,8 +340,36 @@
           <div id="status-panel">
             <h2>🏎️ ESTADOS</h2>
             <div class="driver-status" id="driver1-status">
-              <h3>PILOTO 1</h3>
-              <canvas id="car-canvas-d1" class="car-diagram" width="120" height="200"></canvas>
+              <h3 class="driver-name-heading">JUG-1 <span class="setup-level"></span></h3>
+              <svg id="car-svg-d1" class="car-diagram" viewBox="0 0 200 100" width="200" height="100">
+                <defs>
+                  <clipPath id="d1-clip">
+                    <rect x="0" y="0" width="200" height="100" />
+                  </clipPath>
+                </defs>
+                <g clip-path="url(#d1-clip)">
+                  <line x1="100" y1="0" x2="100" y2="100" stroke="#00aaff" stroke-opacity="0.06" />
+                  <line x1="0" y1="50" x2="200" y2="50" stroke="#00aaff" stroke-opacity="0.06" />
+
+                  <g id="d1-tyres">
+                    <circle id="d1-tyre-fl" cx="150" cy="26" r="8" fill="#bbbbcc" stroke="#666688" stroke-width="1" />
+                    <circle id="d1-tyre-fr" cx="150" cy="74" r="8" fill="#bbbbcc" stroke="#666688" stroke-width="1" />
+                    <circle id="d1-tyre-rl" cx="55" cy="24" r="8" fill="#bbbbcc" stroke="#666688" stroke-width="1" />
+                    <circle id="d1-tyre-rr" cx="55" cy="76" r="8" fill="#bbbbcc" stroke="#666688" stroke-width="1" />
+                  </g>
+
+                  <polygon id="d1-front-wing" points="195,50 190,30 185,30 178,35 160,40 150,42 150,58 160,60 178,65 185,70 190,70" fill="rgba(0,170,255,0.2)" stroke="#00aaff" stroke-width="1" />
+
+                  <polygon id="d1-engine" points="82,42 52,44 52,56 82,58" fill="rgba(0,170,255,0.2)" stroke="#00aaff" stroke-width="1" />
+
+                  <polygon id="d1-gearbox" points="52,44 38,44 38,56 52,56" fill="rgba(0,170,255,0.2)" stroke="#00aaff" stroke-width="1" />
+
+                  <polygon id="d1-rear-wing" points="38,30 10,28 10,72 38,70" fill="rgba(0,170,255,0.2)" stroke="#00aaff" stroke-width="1" />
+
+                  <path id="d1-body" d="M 150,42 Q 130,40 100,40 L 82,40 L 60,42 L 52,44 L 38,44 L 38,56 L 52,56 L 60,58 L 82,60 L 100,60 Q 130,60 150,58 Z" stroke="#00aaff" stroke-width="1.2" fill="none" />
+                </g>
+              </svg>
+
               <div class="driver-bars">
                 <div class="bar">
                   <span>😰 Estrés:</span>
@@ -353,11 +381,45 @@
                   <div class="bar-track"><div class="bar-fill" id="d1-fatigue" style="width:20%"></div></div>
                   <span id="d1-fatigue-value">20%</span>
                 </div>
+                <div class="bar">
+                  <span>🌡️ Motor:</span>
+                  <div class="bar-track"><div class="bar-fill" id="d1-engine-temp" style="width:50%"></div></div>
+                  <span id="d1-engine-temp-value">90°C</span>
+                </div>
               </div>
             </div>
+
             <div class="driver-status" id="driver2-status">
-              <h3>PILOTO 2</h3>
-              <canvas id="car-canvas-d2" class="car-diagram" width="120" height="200"></canvas>
+              <h3 class="driver-name-heading">JUG-2 <span class="setup-level"></span></h3>
+              <svg id="car-svg-d2" class="car-diagram" viewBox="0 0 200 100" width="200" height="100">
+                <defs>
+                  <clipPath id="d2-clip">
+                    <rect x="0" y="0" width="200" height="100" />
+                  </clipPath>
+                </defs>
+                <g clip-path="url(#d2-clip)">
+                  <line x1="100" y1="0" x2="100" y2="100" stroke="#00aaff" stroke-opacity="0.06" />
+                  <line x1="0" y1="50" x2="200" y2="50" stroke="#00aaff" stroke-opacity="0.06" />
+
+                  <g id="d2-tyres">
+                    <circle id="d2-tyre-fl" cx="150" cy="26" r="8" fill="#bbbbcc" stroke="#666688" stroke-width="1" />
+                    <circle id="d2-tyre-fr" cx="150" cy="74" r="8" fill="#bbbbcc" stroke="#666688" stroke-width="1" />
+                    <circle id="d2-tyre-rl" cx="55" cy="24" r="8" fill="#bbbbcc" stroke="#666688" stroke-width="1" />
+                    <circle id="d2-tyre-rr" cx="55" cy="76" r="8" fill="#bbbbcc" stroke="#666688" stroke-width="1" />
+                  </g>
+
+                  <polygon id="d2-front-wing" points="195,50 190,30 185,30 178,35 160,40 150,42 150,58 160,60 178,65 185,70 190,70" fill="rgba(0,170,255,0.2)" stroke="#00aaff" stroke-width="1" />
+
+                  <polygon id="d2-engine" points="82,42 52,44 52,56 82,58" fill="rgba(0,170,255,0.2)" stroke="#00aaff" stroke-width="1" />
+
+                  <polygon id="d2-gearbox" points="52,44 38,44 38,56 52,56" fill="rgba(0,170,255,0.2)" stroke="#00aaff" stroke-width="1" />
+
+                  <polygon id="d2-rear-wing" points="38,30 10,28 10,72 38,70" fill="rgba(0,170,255,0.2)" stroke="#00aaff" stroke-width="1" />
+
+                  <path id="d2-body" d="M 150,42 Q 130,40 100,40 L 82,40 L 60,42 L 52,44 L 38,44 L 38,56 L 52,56 L 60,58 L 82,60 L 100,60 Q 130,60 150,58 Z" stroke="#00aaff" stroke-width="1.2" fill="none" />
+                </g>
+              </svg>
+
               <div class="driver-bars">
                 <div class="bar">
                   <span>😰 Estrés:</span>
@@ -369,8 +431,19 @@
                   <div class="bar-track"><div class="bar-fill" id="d2-fatigue" style="width:80%"></div></div>
                   <span id="d2-fatigue-value">80%</span>
                 </div>
+                <div class="bar">
+                  <span>🌡️ Motor:</span>
+                  <div class="bar-track"><div class="bar-fill" id="d2-engine-temp" style="width:50%"></div></div>
+                  <span id="d2-engine-temp-value">90°C</span>
+                </div>
               </div>
             </div>
+          </div>
+
+          <div id="car-tooltip" class="car-tooltip hidden">
+            <div class="tooltip-name"></div>
+            <div class="tooltip-status"></div>
+            <div class="tooltip-effect"></div>
           </div>
         </section>
       </main>

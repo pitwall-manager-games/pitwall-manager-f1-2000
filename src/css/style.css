@@ -689,8 +689,62 @@ select {
 
 .car-diagram {
   display: block;
-  margin: 0 auto 8px;
+  margin: 0 auto 4px;
   background: transparent;
+  width: 200px;
+  height: 100px;
+}
+
+.car-diagram polygon,
+.car-diagram circle {
+  transition: fill 0.3s ease;
+  cursor: pointer;
+}
+
+.car-tooltip {
+  position: fixed;
+  pointer-events: none;
+  background: var(--bg-panel);
+  border: 1px solid var(--accent-blue);
+  padding: 8px 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  z-index: 1000;
+  min-width: 140px;
+}
+
+.car-tooltip.hidden {
+  display: none;
+}
+
+.car-tooltip .tooltip-name {
+  color: var(--accent-blue);
+  font-weight: bold;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px dotted var(--border-color);
+  margin-bottom: 4px;
+  padding-bottom: 2px;
+}
+
+.car-tooltip .tooltip-status {
+  color: var(--text-primary);
+}
+
+.car-tooltip .tooltip-effect {
+  color: var(--accent-yellow);
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.driver-name-heading {
+  font-size: 11px;
+  color: var(--accent-blue);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  text-align: center;
 }
 
 .driver-bars {
@@ -735,6 +789,12 @@ select {
 #d1-fatigue,
 #d2-fatigue {
   background: var(--bar-fatigue);
+}
+
+#d1-engine-temp,
+#d2-engine-temp {
+  background: var(--accent-green);
+  transition: width 0.3s, background 0.3s;
 }
 
 .bar span:last-child {
